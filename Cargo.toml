@@ -1,0 +1,18 @@
+[package]
+name = "csci-485-project-3"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+sudoer = []
+
+[[bin]]
+name = "csci-485-project-3"
+path = "src/main.rs"
+
+[lib]
+name = "libproj3"
+path = "src/lib.rs"
+
+[dependencies]
+rust_search = "2.1.0"
