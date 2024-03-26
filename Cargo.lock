@@ -145,6 +145,7 @@ name = "csci-485-project-3"
 version = "0.1.0"
 dependencies = [
  "openssl",
+ "regex",
  "reqwest",
  "rust_search",
 ]

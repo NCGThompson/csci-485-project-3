@@ -18,3 +18,24 @@ path = "src/lib.rs"
 rust_search = "2.1.0"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 openssl = { version = "0.10", features = ["vendored"] }
+
+[dev-dependencies]
+regex = "1.10.3" # this is already an indirect dependency
+
+[profile.release]
+lto="thin"
+
+[profile.bench]
+lto="thin"
+
+[profile.dev.package."*"]
+opt-level = 1
+debug-assertions = true # just in case
+overflow-checks = false
+incremental = false
+
+[profile.test.package."*"]
+opt-level = 1
+debug-assertions = true # just in case
+overflow-checks = false
+incremental = false
