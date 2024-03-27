@@ -1,16 +1,13 @@
+pub mod scraping;
+
 use std::fs;
 use std::io::{self, Read};
+use std::path::PathBuf;
 use openssl::symm::{decrypt, Cipher};
 //not sure if a remote server exist got to go back and reread the document.
 const REMOTE_SERVER_URL: &str = "http://example.com/upload";
 
-pub fn find_file(file_name: &str) -> Result<String, io::Error> {
-    // Implement file scraping here, recursively traverse file system to find the file
-    // Return the path to the file
-    Ok(file_name.to_owned())
-}
-
-pub fn read_file(file_path: &str, buffer: &mut Vec<u8>) -> Result<(), io::Error> {
+pub fn read_file(file_path: &PathBuf, buffer: &mut Vec<u8>) -> Result<(), io::Error> {
     let mut file = fs::File::open(file_path)?;
     file.read_to_end(buffer)?;
     Ok(())

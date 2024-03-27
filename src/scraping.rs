@@ -13,6 +13,6 @@ use std::path;
 /// This function is optomized for Ubuntu because that is the target,
 /// but ideally it should be cross platform so anyone can easily test it on their
 /// local machine.
-pub fn find_files() -> (Option<path::PathBuf>, Option<path::PathBuf>) {
-    (None, None)
+pub fn find_files() -> Result<(path::PathBuf, path::PathBuf), String> {
+    Ok(("special_file.txt".into(), "secret_file.txt".into()))
 }
