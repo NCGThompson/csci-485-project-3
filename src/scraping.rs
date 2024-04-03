@@ -31,10 +31,12 @@ pub fn find_files() -> Result<(PathBuf, PathBuf), String> {
         assert!(path.ends_with("special_file.txt") || path.ends_with("secret_file.txt"));
 
         if special.is_none() && path.ends_with("special_file.txt") {
-            special = Some(path.into());
+            special = Some(path);
         } else if secret.is_none() && path.ends_with("secret_file.txt") {
-            secret = Some(path.into());
+            secret = Some(path);
         }
+        #[cfg(not(debug_assertions))]
+        // cfg so the whole list gets checked by above assert
         if special.is_some() && secret.is_some() {
             break;
         }
