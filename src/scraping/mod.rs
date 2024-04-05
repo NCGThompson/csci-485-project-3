@@ -1,3 +1,5 @@
+mod tests;
+
 use std::path::PathBuf;
 
 /// Searches for the files we need, `special_file.txt` and `secret_file.txt`

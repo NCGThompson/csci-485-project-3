@@ -1,5 +1,5 @@
 // basic outline for this program. Hello, Nic and Simeon here is what I have so far.
-use libproj3::{decrypt_file, read_file, scraping::find_files, send_to_remote_server};
+use libproj3::{decrypt_file, find_files, read_file, send_to_remote_server};
 // not sure if a remote server exist got to go back and reread the document.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
