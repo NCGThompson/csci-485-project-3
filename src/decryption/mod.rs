@@ -1,4 +1,5 @@
 mod tests;
+mod unpad;
 
 use openssl::symm;
 
