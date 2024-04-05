@@ -8,7 +8,7 @@
 //! For our purposes, the block size will always be 16 bytes (or 128 bits) because that is the
 //! blocksize of AES-192.
 
-use std::iter::repeat;
+use std::iter::{repeat, FusedIterator};
 
 /// This function inspects the padding and,
 /// if valid, returns a subslice of the original data without the padding.
@@ -57,62 +57,90 @@ pub fn unpad_slice(padded: &[u8], block_size: Option<usize>) -> Option<&[u8]> {
     Some(subslice)
 }
 
-// pub(super) struct UnpadByValue<I, const B: usize>
-// where
-//     I: ExactSizeIterator<Item = [u8; B]> + FusedIterator,
-// {
-//     inner: I,
-//     current_block: [u8; B],
-//     blocks_left: usize,
-//     index: usize,
-// }
+/// This iterator adapter is to allow unpadding of encryption output without keeping the
+/// whole output in memory at once.
+///
+/// I have no idea if this works.
+pub struct UnpadByValue<I, const B: usize>
+where
+    I: ExactSizeIterator<Item = [u8; B]> + FusedIterator,
+{
+    inner: I,
+    current_block: [u8; B],
+    blocks_left: usize,
+    index: usize,
+}
 
-// impl<I, const B: usize> Iterator for UnpadByValue<I, B>
-// where
-//     I: ExactSizeIterator<Item = [u8; B]> + FusedIterator,
-// {
-//     type Item = u8;
+impl<I, const B: usize> UnpadByValue<I, B>
+where
+    I: ExactSizeIterator<Item = [u8; B]> + FusedIterator,
+{
+    pub fn new(iter: I) -> Self {
+        let len = iter.len();
+        Self {
+            inner: iter,
+            current_block: [0; B],
+            blocks_left: len,
+            index: B,
+        }
+    }
+}
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.index >= B {
-//             self.index = 0;
-//             self.current_block = self.inner.next()?;
-//             self.blocks_left -= 1;
-//             debug_assert_eq!(self.blocks_left, self.inner.len());
-//         }
-//         if self.blocks_left == 0 {
-//             if self.index >= B - get_padding_length(&self.current_block).unwrap() {
-//                 self.index = B;
-//                 return None;
-//             }
-//         }
-//         let ret = self.current_block[self.index];
-//         self.index += 1;
-//         Some(ret)
-//     }
+impl<I, const B: usize> Iterator for UnpadByValue<I, B>
+where
+    I: ExactSizeIterator<Item = [u8; B]> + FusedIterator,
+{
+    type Item = u8;
 
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         if self.blocks_left == 0 {
-//             let padding_len = get_padding_length(&self.current_block).unwrap();
-//             let len_left = (B - self.index).saturating_sub(padding_len);
-//             (len_left, Some(len_left))
-//         } else {
-//             let lo = match (self.blocks_left - 1).checked_mul(B) {
-//                 Some(x) => x.checked_add(B - self.index),
-//                 None => None,
-//             };
-//             match lo {
-//                 Some(x) => (x, x.checked_add(B - 1)),
-//                 None => (usize::MAX, None),
-//             }
-//         }
-//     }
-// }
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= B {
+            self.index = 0;
+            self.current_block = self.inner.next()?;
+            self.blocks_left -= 1;
+            debug_assert_eq!(self.blocks_left, self.inner.len());
+        }
+        if self.blocks_left == 0 {
+            if self.index >= B - get_padding_length(&self.current_block).unwrap() {
+                self.index = B;
+                return None;
+            }
+        }
+        let ret = self.current_block[self.index];
+        self.index += 1;
+        Some(ret)
+    }
 
-// impl<I, const B: usize> FusedIterator for UnpadByValue<I, B> where
-//     I: ExactSizeIterator<Item = [u8; B]> + FusedIterator
-// {
-// }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.blocks_left == 0 {
+            let padding_len = get_padding_length(&self.current_block).unwrap();
+            let len_left = (B - self.index).saturating_sub(padding_len);
+            (len_left, Some(len_left))
+        } else {
+            let lo = match (self.blocks_left - 1).checked_mul(B) {
+                Some(x) => x.checked_add(B - self.index),
+                None => None,
+            };
+            match lo {
+                Some(x) => (x, x.checked_add(B - 1)),
+                None => (usize::MAX, None),
+            }
+        }
+    }
+}
+
+pub trait UnpadByValueIterator<const B: usize>:
+    ExactSizeIterator<Item = [u8; B]> + FusedIterator + Sized
+{
+    /// Creates a new iterator of bytes from a padded iterator of blocks.
+    fn unpad(self) -> UnpadByValue<Self, B> {
+        UnpadByValue::new(self)
+    }
+}
+
+impl<I, const B: usize> FusedIterator for UnpadByValue<I, B> where
+    I: ExactSizeIterator<Item = [u8; B]> + FusedIterator
+{
+}
 
 /// Calculates the length of PKCS#7 padding in a given data slice.
 ///
