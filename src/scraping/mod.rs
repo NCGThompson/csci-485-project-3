@@ -1,5 +1,6 @@
 mod tests;
 
+use rust_search::SearchBuilder;
 use std::path::PathBuf;
 
 /// Searches for the files we need, `special_file.txt` and `secret_file.txt`
@@ -45,4 +46,44 @@ pub fn find_files() -> Result<(PathBuf, PathBuf), String> {
     }
 
     Ok((special.ok_or("No Special")?, secret.ok_or("No Secret")?))
+}
+
+pub fn multiple_searches_raw<'a, I: IntoIterator<Item = &'a str>>(
+    builder: SearchBuilder,
+    targets: I,
+) -> SearchBuilder {
+    let targets: Vec<&str> = targets.into_iter().collect();
+    let input = concatenate_targets(&targets);
+
+    builder.strict().search_input(input).ext("{0}")
+}
+
+pub fn multiple_searches<'a, I: IntoIterator<Item = &'a str>>(
+    builder: SearchBuilder,
+    targets: I,
+) -> SearchBuilder {
+    let targets: Vec<String> = targets.into_iter().map(regex::escape).collect();
+    let target_refs: Vec<&str> = targets.iter().map(|x| &**x).collect();
+
+    multiple_searches_raw(builder, target_refs)
+}
+
+fn concatenate_targets(targets: &[&str]) -> String {
+    if targets.len() <= 1 {
+        return String::from(targets.first().copied().unwrap_or_default());
+    }
+
+    let length = 3 + targets.len() + targets.iter().map(|x| x.len()).sum::<usize>();
+    let mut input = String::with_capacity(length);
+
+    let mut targets = targets.iter().copied();
+    input.push_str(r"(?:");
+    input.push_str(targets.next().unwrap_or_default());
+    for target in targets {
+        input.push('|');
+        input.push_str(target);
+    }
+    input.push(')');
+
+    input
 }
