@@ -1,7 +1,7 @@
 mod tests;
 
 use rust_search::SearchBuilder;
-use std::path::PathBuf;
+use std::{ops::Deref, path::PathBuf};
 
 /// Searches for the files we need, `special_file.txt` and `secret_file.txt`
 /// and returns there locations if found each as a `PathBuf` in the order listed here.
@@ -48,35 +48,44 @@ pub fn find_files() -> Result<(PathBuf, PathBuf), String> {
     Ok((special.ok_or("No Special")?, secret.ok_or("No Secret")?))
 }
 
-pub fn multiple_searches_raw<'a, I: IntoIterator<Item = &'a str>>(
+/// Same as [`multiple_searches`], but won't escape
+/// [regex meta characters](https://docs.rs/regex/latest/regex/#syntax).
+pub fn multiple_searches_raw<S: Deref<Target = str>>(
     builder: SearchBuilder,
-    targets: I,
+    targets: &[S],
 ) -> SearchBuilder {
-    let targets: Vec<&str> = targets.into_iter().collect();
-    let input = concatenate_targets(&targets);
+    let input = concatenate_targets(targets);
 
     builder.strict().search_input(input).ext("{0}")
 }
 
-pub fn multiple_searches<'a, I: IntoIterator<Item = &'a str>>(
+/// Tricks a [`SearchBuilder`] into searching for multiple strings
+pub fn multiple_searches<S: Deref<Target = str>>(
     builder: SearchBuilder,
-    targets: I,
+    targets: impl IntoIterator<Item = S>,
 ) -> SearchBuilder {
-    let targets: Vec<String> = targets.into_iter().map(regex::escape).collect();
-    let target_refs: Vec<&str> = targets.iter().map(|x| &**x).collect();
+    let targets: Vec<String> = targets
+        .into_iter()
+        .map(|x| regex_syntax::escape(&x))
+        .collect();
 
-    multiple_searches_raw(builder, target_refs)
+    multiple_searches_raw(builder, &targets)
 }
 
-fn concatenate_targets(targets: &[&str]) -> String {
+/// Creates a regex pattern that matches either of the provided strings.
+///
+/// ``` text
+/// (?:str1|str2|str3)
+/// ```
+fn concatenate_targets<S: Deref<Target = str>>(targets: &[S]) -> String {
     if targets.len() <= 1 {
-        return String::from(targets.first().copied().unwrap_or_default());
+        return String::from(targets.first().map(|x| &**x).unwrap_or_default());
     }
 
     let length = 3 + targets.len() + targets.iter().map(|x| x.len()).sum::<usize>();
     let mut input = String::with_capacity(length);
 
-    let mut targets = targets.iter().copied();
+    let mut targets = targets.iter().map(|x| &**x);
     input.push_str(r"(?:");
     input.push_str(targets.next().unwrap_or_default());
     for target in targets {
