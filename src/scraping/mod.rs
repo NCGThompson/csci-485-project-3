@@ -1,10 +1,10 @@
 mod tests;
 
 use rust_search::SearchBuilder;
-use std::{ops::Deref, path::PathBuf};
+use std::{ops::Deref, path::Path, time::Instant};
 
 /// Searches for the files we need, `special_file.txt` and `secret_file.txt`
-/// and returns there locations if found each as a `PathBuf` in the order listed here.
+/// and returns there locations if found each as a `String` in the order listed here.
 /// This uses the library `rust_search` which indirectly wraps `walkdir`.
 ///
 /// `scrape()` will always search the running users home directory if possible.
@@ -14,7 +14,7 @@ use std::{ops::Deref, path::PathBuf};
 /// This function is optimized for Ubuntu because that is the target,
 /// but ideally it should be cross platform so anyone can easily test it on their
 /// local machine.
-pub fn find_files() -> Result<(PathBuf, PathBuf), String> {
+pub fn find_files() -> Result<(String, String), String> {
     let search = rust_search::SearchBuilder::default()
         .search_input(r"(?:special|secret)_file")
         .ext(r"txt")
@@ -22,29 +22,12 @@ pub fn find_files() -> Result<(PathBuf, PathBuf), String> {
         .strict()
         .build();
 
-    let paths_vec: Vec<String> = search.collect();
+    let targets = ["special_file.txt", "secret_file.txt"];
+    let mut paths = [None, None];
 
-    let mut special: Option<PathBuf> = None;
-    let mut secret: Option<PathBuf> = None;
-    for path_string in paths_vec {
-        let path = PathBuf::from(path_string);
-        // This should be a cheap conversion, see std/ffi/struct.OsString.html
-        // It's useful because ends_with behaves differently for &str than it does for &Path
+    process_results(&mut paths, search, &targets, false, cfg!(debug_assertions));
 
-        assert!(path.ends_with("special_file.txt") || path.ends_with("secret_file.txt"));
-
-        if special.is_none() && path.ends_with("special_file.txt") {
-            special = Some(path);
-        } else if secret.is_none() && path.ends_with("secret_file.txt") {
-            secret = Some(path);
-        }
-        #[cfg(not(debug_assertions))]
-        // cfg so the whole list gets checked by above assert
-        if special.is_some() && secret.is_some() {
-            break;
-        }
-    }
-
+    let [special, secret] = paths;
     Ok((special.ok_or("No Special")?, secret.ok_or("No Secret")?))
 }
 
@@ -95,4 +78,42 @@ fn concatenate_targets<S: Deref<Target = str>>(targets: &[S]) -> String {
     input.push(')');
 
     input
+}
+
+/// This function consumes a [`Search`](rust_search::Search) instance and writes
+/// the results to `paths`.
+///
+/// This is optimized for `Search` to be blocking like
+/// [`Reciever.into_iter()`](std::sync::mpsc::IntoIter) and return results in real time,
+/// but it turns out not to be the case, at least at this scale.
+fn process_results<S: Deref<Target = str>>(
+    paths: &mut [Option<String>],
+    search: rust_search::Search,
+    targets: &[S],
+    log: bool,
+    find_all: bool,
+) {
+    let start = Instant::now();
+
+    assert_eq!(targets.len(), paths.len());
+
+    for res in search {
+        if log {
+            println!("{}s: {}", start.elapsed().as_secs_f64(), res);
+        }
+        let filename: &str = Path::new(&res)
+            .file_name()
+            .expect("no file name of path")
+            .to_str()
+            .unwrap();
+
+        let i = (0..targets.len())
+            .find(|&i| *filename == *targets[i])
+            .expect("file name didn't match targets");
+        paths[i].get_or_insert(res);
+
+        if !find_all && paths.iter().all(Option::is_some) {
+            return;
+        }
+    }
 }
