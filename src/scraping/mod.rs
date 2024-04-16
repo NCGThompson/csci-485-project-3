@@ -124,13 +124,16 @@ pub fn execute_search<S: Deref<Target = str>>(
     let search = builder.limit(4096).build();
 
     if log {
-        println!("Search complete: {}s", start.elapsed().as_secs_f64());
+        println!("This search complete: {}s", start.elapsed().as_secs_f64());
     }
 
     process_results(paths, search, targets, log);
 
     if log {
-        println!("Processing complete: {}s", start.elapsed().as_secs_f64());
+        println!(
+            "This search and processing complete: {}s",
+            start.elapsed().as_secs_f64()
+        );
     }
 }
 

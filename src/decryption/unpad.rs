@@ -99,7 +99,9 @@ where
             self.blocks_left -= 1;
             debug_assert_eq!(self.blocks_left, self.inner.len());
         }
-        if self.blocks_left == 0 && self.index >= B - get_padding_length(&self.current_block).unwrap() {
+        if self.blocks_left == 0
+            && self.index >= B - get_padding_length(&self.current_block).unwrap()
+        {
             self.index = B;
             return None;
         }
