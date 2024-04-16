@@ -20,6 +20,7 @@ rust_search = "2.1.0"
 reqwest = { version = "0.12.*", features = ["blocking", "json"] }
 openssl = { version = "0.10", features = ["vendored"] }
 regex-syntax = "0.8.3"
+dirs = "5.0.1"
 
 [dev-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }

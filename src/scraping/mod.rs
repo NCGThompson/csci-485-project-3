@@ -1,3 +1,4 @@
+pub mod directories;
 mod tests;
 
 use rust_search::SearchBuilder;
@@ -15,8 +16,7 @@ use std::{ops::Deref, path::Path, time::Instant};
 /// but ideally it should be cross platform so anyone can easily test it on their
 /// local machine.
 pub fn find_files() -> Result<(String, String), String> {
-    let mut builder = rust_search::SearchBuilder::default()
-        .location(r"~");
+    let mut builder = stage_1(rust_search::SearchBuilder::default());
     builder = multiple_searches_default(builder);
 
     let targets = ["special_file.txt", "secret_file.txt"];
@@ -54,7 +54,10 @@ pub fn multiple_searches<S: Deref<Target = str>>(
 
 /// Sets a [`SearchBuilder`] to find `special_file.txt` and `secret_file.txt`
 pub fn multiple_searches_default(builder: SearchBuilder) -> SearchBuilder {
-    builder.strict().search_input(r"(?:special|secret)_file").ext("txt")
+    builder
+        .strict()
+        .search_input(r"(?:special|secret)_file")
+        .ext("txt")
 }
 
 /// Creates a regex pattern that matches either of the provided strings.
@@ -93,7 +96,6 @@ fn process_results<S: Deref<Target = str>>(
     assert_eq!(targets.len(), paths.len());
 
     for res in search {
-        
         let filename: &str = Path::new(&res)
             .file_name()
             .expect("no file name of path")
@@ -130,4 +132,24 @@ pub fn execute_search<S: Deref<Target = str>>(
     if log {
         println!("Processing complete: {}s", start.elapsed().as_secs_f64());
     }
+}
+
+/// Preset for searching all files within the user's home directory.
+pub fn stage_1(builder: SearchBuilder) -> SearchBuilder {
+    builder.hidden().location(directories::home_dir().unwrap())
+}
+
+/// Preset for searching from the root with many folders excluded,
+/// such as the user's home directory.
+pub fn stage_2(builder: SearchBuilder) -> SearchBuilder {
+    directories::skip_home(directories::filter_top(directories::relative_filter_name(
+        builder,
+    )))
+    .location(std::path::MAIN_SEPARATOR_STR)
+}
+
+/// Preset for searching almost everything excluding the user's home directory.
+pub fn stage_3(builder: SearchBuilder) -> SearchBuilder {
+    directories::skip_home(directories::filter_top_min(builder))
+        .location(std::path::MAIN_SEPARATOR_STR)
 }
