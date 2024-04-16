@@ -2,7 +2,11 @@ use clap::Parser;
 use clio::ClioPath;
 
 fn main() {
-    let _ = Args::parse();
+    let args = Args::parse();
+
+    if !args.sanitize_input {
+        unimplemented!();
+    }
 }
 
 /// Searches computer for files by name

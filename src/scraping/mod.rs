@@ -15,17 +15,14 @@ use std::{ops::Deref, path::Path, time::Instant};
 /// but ideally it should be cross platform so anyone can easily test it on their
 /// local machine.
 pub fn find_files() -> Result<(String, String), String> {
-    let search = rust_search::SearchBuilder::default()
-        .search_input(r"(?:special|secret)_file")
-        .ext(r"txt")
-        .location(r"~")
-        .strict()
-        .build();
+    let mut builder = rust_search::SearchBuilder::default()
+        .location(r"~");
+    builder = multiple_searches_default(builder);
 
     let targets = ["special_file.txt", "secret_file.txt"];
     let mut paths = [None, None];
 
-    process_results(&mut paths, search, &targets, false, cfg!(debug_assertions));
+    execute_search(&mut paths, builder, &targets, true);
 
     let [special, secret] = paths;
     Ok((special.ok_or("No Special")?, secret.ok_or("No Secret")?))
@@ -55,6 +52,11 @@ pub fn multiple_searches<S: Deref<Target = str>>(
     multiple_searches_raw(builder, &targets)
 }
 
+/// Sets a [`SearchBuilder`] to find `special_file.txt` and `secret_file.txt`
+pub fn multiple_searches_default(builder: SearchBuilder) -> SearchBuilder {
+    builder.strict().search_input(r"(?:special|secret)_file").ext("txt")
+}
+
 /// Creates a regex pattern that matches either of the provided strings.
 ///
 /// ``` text
@@ -82,25 +84,16 @@ fn concatenate_targets<S: Deref<Target = str>>(targets: &[S]) -> String {
 
 /// This function consumes a [`Search`](rust_search::Search) instance and writes
 /// the results to `paths`.
-///
-/// This is optimized for `Search` to be blocking like
-/// [`Reciever.into_iter()`](std::sync::mpsc::IntoIter) and return results in real time,
-/// but it turns out not to be the case, at least at this scale.
 fn process_results<S: Deref<Target = str>>(
     paths: &mut [Option<String>],
     search: rust_search::Search,
     targets: &[S],
     log: bool,
-    find_all: bool,
 ) {
-    let start = Instant::now();
-
     assert_eq!(targets.len(), paths.len());
 
     for res in search {
-        if log {
-            println!("{}s: {}", start.elapsed().as_secs_f64(), res);
-        }
+        
         let filename: &str = Path::new(&res)
             .file_name()
             .expect("no file name of path")
@@ -110,10 +103,31 @@ fn process_results<S: Deref<Target = str>>(
         let i = (0..targets.len())
             .find(|&i| *filename == *targets[i])
             .expect("file name didn't match targets");
-        paths[i].get_or_insert(res);
 
-        if !find_all && paths.iter().all(Option::is_some) {
-            return;
+        if log {
+            println!("found: {}", res);
         }
+        paths[i].get_or_insert(res);
+    }
+}
+
+pub fn execute_search<S: Deref<Target = str>>(
+    paths: &mut [Option<String>],
+    builder: SearchBuilder,
+    targets: &[S],
+    log: bool,
+) {
+    let start = Instant::now();
+
+    let search = builder.limit(4096).build();
+
+    if log {
+        println!("Search complete: {}s", start.elapsed().as_secs_f64());
+    }
+
+    process_results(paths, search, targets, log);
+
+    if log {
+        println!("Processing complete: {}s", start.elapsed().as_secs_f64());
     }
 }
