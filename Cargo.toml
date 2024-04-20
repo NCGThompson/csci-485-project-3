@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["Nicholas Thompson", "Simeon Sledge", "LaQuawne DePriest"]
 
 [features]
+default = ["sudoer"]
 sudoer = []
 
 [[bin]]

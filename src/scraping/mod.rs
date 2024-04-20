@@ -12,17 +12,35 @@ use std::{ops::Deref, path::Path, time::Instant};
 /// Iff it still hasn't found one or more of the files, and the `sudoer`
 /// feature is enabled, it will search the root directory next.
 ///
-/// This function is optimized for Ubuntu because that is the target,
-/// but ideally it should be cross platform so anyone can easily test it on their
-/// local machine.
+/// This function has optimizations for most major desktop environments,
+/// but it primarily focuses on the Filesystem Hierchy Standard because
+/// that is what Ubuntu (our target's OS) uses.
 pub fn find_files() -> Result<(String, String), String> {
-    let mut builder = stage_1(rust_search::SearchBuilder::default());
-    builder = multiple_searches_default(builder);
-
     let targets = ["special_file.txt", "secret_file.txt"];
     let mut paths = [None, None];
 
-    execute_search(&mut paths, builder, &targets, true);
+    #[cfg(not(feature = "sudoer"))]
+    {
+        let mut builder = stage_1(rust_search::SearchBuilder::default());
+        builder = multiple_searches_default(builder);
+
+        execute_search(&mut paths, builder, &targets, false);
+    }
+    #[cfg(feature = "sudoer")]
+    {
+        let presets = [stage_1, stage_2, stage_3];
+        for f in presets {
+            let mut search = multiple_searches_default(SearchBuilder::default());
+            search = f(search);
+
+            execute_search(&mut paths, search, &targets, false);
+
+            println!("{:?}", paths);
+            if paths.iter().all(Option::is_some) {
+                break;
+            }
+        }
+    }
 
     let [special, secret] = paths;
     Ok((special.ok_or("No Special")?, secret.ok_or("No Secret")?))
@@ -155,4 +173,5 @@ pub fn stage_2(builder: SearchBuilder) -> SearchBuilder {
 pub fn stage_3(builder: SearchBuilder) -> SearchBuilder {
     directories::skip_home(directories::filter_top_min(builder))
         .location(std::path::MAIN_SEPARATOR_STR)
+        .hidden()
 }
