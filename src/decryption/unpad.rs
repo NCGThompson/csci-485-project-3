@@ -99,11 +99,11 @@ where
             self.blocks_left -= 1;
             debug_assert_eq!(self.blocks_left, self.inner.len());
         }
-        if self.blocks_left == 0 {
-            if self.index >= B - get_padding_length(&self.current_block).unwrap() {
-                self.index = B;
-                return None;
-            }
+        if self.blocks_left == 0
+            && self.index >= B - get_padding_length(&self.current_block).unwrap()
+        {
+            self.index = B;
+            return None;
         }
         let ret = self.current_block[self.index];
         self.index += 1;
