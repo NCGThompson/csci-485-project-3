@@ -20,7 +20,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Send decrypted data to remote server
     send_to_remote_server(&decrypted_data)?;
 
-    print!("Hello Nic and Simeon!");
-
     Ok(())
 }

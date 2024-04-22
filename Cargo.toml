@@ -18,11 +18,11 @@ path = "src/lib.rs"
 
 [dependencies]
 rust_search = "2.1.0"
-reqwest = { version = "0.12.*", features = ["blocking", "json"] }
 regex-syntax = "0.8.3"
 dirs = "5.0.1"
 aes = "0.8.4"
 cbc = { version = "0.1.2", features = ["alloc", "std"] }
+ureq = { version = "2.9.6", default-features = false, features = ["json"] }
 
 [dev-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
