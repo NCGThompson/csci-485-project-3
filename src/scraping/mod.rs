@@ -35,7 +35,6 @@ pub fn find_files() -> Result<(String, String), String> {
 
             execute_search(&mut paths, search, &targets, false);
 
-            println!("{:?}", paths);
             if paths.iter().all(Option::is_some) {
                 break;
             }

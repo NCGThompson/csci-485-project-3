@@ -31,17 +31,11 @@ regex = "1.10.4"
 
 [profile.release]
 lto="fat"
-
-[profile.bench]
-lto="fat"
+codegen-units = 1
+strip = true
+panic = "abort" # We mostly use results anyway
 
 [profile.dev.package."*"]
-opt-level = 1
-debug-assertions = true # just in case
-overflow-checks = false
-incremental = false
-
-[profile.test.package."*"]
 opt-level = 1
 debug-assertions = true # just in case
 overflow-checks = false
