@@ -1,0 +1,2 @@
+special_file.txt binary
+secret_file.txt -text -merge # Still show diffs.
