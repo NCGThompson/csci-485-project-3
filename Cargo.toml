@@ -1,12 +1,16 @@
 [package]
 name = "csci-485-project-3"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Nicholas Thompson", "Simeon Sledge", "LaQuawne DePriest"]
+readme = true
+license = "MIT OR Apache-2.0"
+description = "A malicious script to find, decrypt, and send a file"
+repository = "https://github.com/NCGThompson/csci-485-project-3"
 
 [features]
 default = ["sudoer"]
-sudoer = []
+sudoer = [] # searches whole computer
 
 [[bin]]
 name = "csci-485-project-3"
