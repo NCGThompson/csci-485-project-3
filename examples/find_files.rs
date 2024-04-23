@@ -1,3 +1,5 @@
+//! See [Args] documentation for more information.
+
 use std::{ops::Deref as _, time::Instant};
 
 use libproj3::scraping::{self as s, execute_search};
@@ -30,8 +32,9 @@ fn main() {
     }
 
     let mut all_found: Option<f64> = None;
+    let max = if args.home_only { 1 } else { usize::MAX };
     let presets = [s::stage_1, s::stage_2, s::stage_3];
-    for (i, f) in presets.into_iter().enumerate() {
+    for (i, f) in presets.into_iter().enumerate().take(max) {
         println!(
             "Beginning Stage {} at {}s",
             i + 1,
@@ -78,11 +81,16 @@ fn main() {
 /// searches for the target files (`secret_file.txt` and `special_file.txt`),
 /// but it provides debugging output and is configurable at runtime.
 #[derive(Parser, Debug)]
-#[command(author)]
+#[command(version, author, about)]
 struct Args {
-    /// Currently this is ignored because it is always on
-    #[arg(short, long, default_value_t = false)]
-    privaleged_user: bool,
+    /// Only search the user's home directory.
+    ///
+    /// This is the inverse of the `sudoer`` flag (which has no effect here). When false,
+    /// it will search almost all files on the system, but prioritizing
+    /// the most likely locations. When true, it stops after the first round, making
+    /// `short_circuit` redundant.
+    #[arg(long, default_value_t = false)]
+    home_only: bool,
 
     /// Currently this is ignored because it is always on
     #[arg(long, default_value_t = true)] // TODO defaults
@@ -96,6 +104,8 @@ struct Args {
     #[clap(value_parser = clap::value_parser!(ClioPath).exists().is_dir())]
     search_root: Option<ClioPath>,
 
+    /// Stop when done
+    /// 
     /// When this is false (default), it will search the whole drive regardless of if it already found
     /// all target files. It will display the actual time taken to execute as well
     /// as the time it would have terminated if this were false.

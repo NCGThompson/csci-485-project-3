@@ -9,7 +9,7 @@ pub use dirs::home_dir;
 static SKIPED_DIRECTORY_NAMES: [&str; 4] = ["bin", "lib", "sbin", "usr"];
 
 #[cfg(all(unix, not(target_os = "macos")))]
-static SKIPED_PATHS: [&str; 4] = ["boot", "dev", "opt", "tmp"];
+static SKIPED_PATHS: [&str; 5] = ["boot", "dev", "opt", "proc", "tmp"];
 
 #[cfg(target_os = "macos")]
 static SKIPED_PATHS: [&str; 6] = ["System", "Volumes", "boot", "dev", "opt", "tmp"];
@@ -18,7 +18,7 @@ static SKIPED_PATHS: [&str; 6] = ["System", "Volumes", "boot", "dev", "opt", "tm
 static SKIPED_PATHS: [&str; 3] = ["Program Files", "Program Files (x86)", "Windows"];
 
 #[cfg(all(unix, not(target_os = "macos")))]
-static ALWAYS_SKIPED_PATHS: [&str; 1] = ["dev"];
+static ALWAYS_SKIPED_PATHS: [&str; 2] = ["dev", "proc"];
 
 #[cfg(target_os = "macos")]
 static ALWAYS_SKIPED_PATHS: [&str; 3] = ["System", "Volumes", "dev"];
